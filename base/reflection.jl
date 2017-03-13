@@ -923,6 +923,12 @@ function function_module(f::ANY, types::ANY)
     return first(m).module
 end
 
+function _method_exists(f::ANY, t::ANY, world)
+    t = to_tuple_type(t)
+    t = Tuple{isa(f,Type) ? Type{f} : typeof(f), t.parameters...}
+    return ccall(:jl_method_exists, Cint, (Any, Any, UInt), typeof(f).name.mt, t, world) != 0
+end
+
 """
     method_exists(f, Tuple type) -> Bool
 
@@ -934,12 +940,7 @@ julia> method_exists(length, Tuple{Array})
 true
 ```
 """
-function method_exists(f::ANY, t::ANY)
-    t = to_tuple_type(t)
-    t = Tuple{isa(f,Type) ? Type{f} : typeof(f), t.parameters...}
-    return ccall(:jl_method_exists, Cint, (Any, Any, UInt), typeof(f).name.mt, t,
-        typemax(UInt)) != 0
-end
+method_exists(f::ANY, t::ANY) = _method_exists(f, t, typemax(UInt))
 
 """
     isambiguous(m1, m2, [allow_bottom_tparams=true]) -> Bool
